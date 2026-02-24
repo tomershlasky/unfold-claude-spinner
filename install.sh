@@ -27,7 +27,13 @@ set -euo pipefail
 
 API_BASE="https://unfold.decart.ai/api"
 SETTINGS="$HOME/.claude/settings.json"
+STAMP="$HOME/.claude/.spinner-last-update"
 DATE=$(date -u +%Y-%m-%d)
+
+# skip if already updated today
+if [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$DATE" ]; then
+  exit 0
+fi
 
 # fetch today's topic titles
 TOPICS=$(curl -sf "$API_BASE/digests/$DATE/topics" | jq -r '[.topics[]?.title // empty]') || { echo "API unreachable, skipping update"; exit 0; }
@@ -48,6 +54,9 @@ SPINNER_OBJ=$(jq -n --argjson items "$ITEMS" '{"mode":"replace","verbs":$items}'
 # merge into settings
 UPDATED=$(jq --argjson sv "$SPINNER_OBJ" '.spinnerVerbs = $sv' "$SETTINGS")
 echo "$UPDATED" > "$SETTINGS"
+
+# mark today as done so we don't call the API again
+echo "$DATE" > "$STAMP"
 UPDATER
 chmod +x "$UPDATE_SCRIPT"
 ok "Created $UPDATE_SCRIPT"
