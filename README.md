@@ -14,12 +14,6 @@ This will:
 3. Fetch today's headlines into `~/.claude/settings.json`
 4. Add a shell hook so it refreshes on each new terminal
 
-## Manual refresh
-
-```bash
-~/.claude/update-spinner.sh
-```
-
 ## Uninstall
 
 Remove the hook from your `~/.zshrc` or `~/.bashrc` (look for `unfold-claude-spinner`) and delete the script:
