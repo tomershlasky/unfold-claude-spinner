@@ -66,15 +66,12 @@ add_hook() {
   ok "Added auto-update hook to $rc"
 }
 
-# detect shell
-if [ -n "${ZSH_VERSION:-}" ] || [ "$SHELL" = */zsh ]; then
-  add_hook "$HOME/.zshrc"
-elif [ -n "${BASH_VERSION:-}" ] || [ "$SHELL" = */bash ]; then
-  add_hook "$HOME/.bashrc"
-else
-  add_hook "$HOME/.zshrc"
-  add_hook "$HOME/.bashrc"
-fi
+# detect shell — add to the user's login shell rc file
+case "${SHELL:-}" in
+  */zsh)  add_hook "$HOME/.zshrc" ;;
+  */bash) add_hook "$HOME/.bashrc" ;;
+  *)      add_hook "$HOME/.zshrc"; add_hook "$HOME/.bashrc" ;;
+esac
 
 echo ""
 ok "Done! Your Claude Code spinner will update with today's AI news on each new shell."
