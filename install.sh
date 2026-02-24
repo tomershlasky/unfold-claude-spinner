@@ -78,4 +78,3 @@ esac
 
 echo ""
 ok "Done! Your Claude Code spinner will update with today's AI news on each new shell."
-info "Manual refresh: ~/.claude/update-spinner.sh"
