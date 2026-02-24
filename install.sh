@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SPINNER_API="https://unfold.decart.ai/api/spinner"
 SETTINGS="$HOME/.claude/settings.json"
 UPDATE_SCRIPT="$HOME/.claude/update-spinner.sh"
 
@@ -26,12 +25,16 @@ cat > "$UPDATE_SCRIPT" << 'UPDATER'
 #!/usr/bin/env bash
 set -euo pipefail
 
-SPINNER_API="https://unfold.decart.ai/api/spinner"
+API_BASE="https://unfold.decart.ai/api"
 SETTINGS="$HOME/.claude/settings.json"
+DATE=$(date -u +%Y-%m-%d)
 
-# fetch spinner items
-ITEMS=$(curl -sf "$SPINNER_API" | jq -r '.items // empty') || { echo "Spinner API unreachable, skipping update"; exit 0; }
-[ -z "$ITEMS" ] && exit 0
+# fetch today's topic titles
+TOPICS=$(curl -sf "$API_BASE/digests/$DATE/topics" | jq -r '[.topics[]?.title // empty]') || { echo "API unreachable, skipping update"; exit 0; }
+[ -z "$TOPICS" ] || [ "$TOPICS" = "[]" ] && exit 0
+
+# add " | unfolding" suffix to each title
+ITEMS=$(echo "$TOPICS" | jq '[.[] | . + " | unfolding"]')
 
 COUNT=$(echo "$ITEMS" | jq 'length')
 [ "$COUNT" -lt 2 ] && exit 0
@@ -51,7 +54,7 @@ ok "Created $UPDATE_SCRIPT"
 
 # --- run it once ---
 info "Fetching today's spinner items..."
-bash "$UPDATE_SCRIPT" && ok "Spinner updated" || err "First update failed (API may not be deployed yet)"
+bash "$UPDATE_SCRIPT" && ok "Spinner updated" || err "First update failed (no digest for today yet?)"
 
 # --- add shell hook to .zshrc / .bashrc ---
 HOOK='# unfold-claude-spinner: refresh on new shell
