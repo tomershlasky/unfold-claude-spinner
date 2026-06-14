@@ -1,6 +1,18 @@
 # unfold-claude-spinner
 
-Replace the default Claude Code spinner with recent World Cup results plus today's AI news from [Unfold](https://unfold.decart.ai).
+Replace the default Claude Code spinner with today's AI news headlines from [Unfold](https://unfold.decart.ai) — and, while the tournament is on, live World Cup results too.
+
+## 🤖 AI news
+
+Every new terminal, it fetches today's AI headlines and shows them as the spinner's "thinking" verbs — so the time Claude spends working is time you spend catching up:
+
+```
+🤖 Police Officer Investigated for Using AI to 'Create Evidence' in Multiple Cases | unfolding
+🤖 State Attorneys General Are Investigating OpenAI | unfolding
+```
+
+- Pulls today's topics from Unfold and writes them to `spinnerVerbs` in `~/.claude/settings.json`.
+- Refreshes once a day, on each new shell. No config, no API keys.
 
 ## ⚽ World Cup edition
 
