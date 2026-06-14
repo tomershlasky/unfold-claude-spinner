@@ -26,6 +26,8 @@ cat > "$UPDATE_SCRIPT" << 'UPDATER'
 set -euo pipefail
 
 API_BASE="https://unfold.decart.ai/api"
+WC_API="https://www.thesportsdb.com/api/v1/json/3"
+WC_LEAGUE="4429"   # FIFA World Cup
 SETTINGS="$HOME/.claude/settings.json"
 STAMP="$HOME/.claude/.spinner-last-update"
 DATE=$(date -u +%Y-%m-%d)
@@ -35,12 +37,47 @@ if [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$DATE" ]; then
   exit 0
 fi
 
-# fetch today's topic titles
-TOPICS=$(curl -sf "$API_BASE/digests/$DATE/topics" | jq -r '[.topics[]?.title // empty]') || { echo "API unreachable, skipping update"; exit 0; }
-[ -z "$TOPICS" ] || [ "$TOPICS" = "[]" ] && exit 0
+# rolling window: today / yesterday / day-before (BSD on macOS, GNU on Linux)
+date_back() { date -u -v-"$1"d +%Y-%m-%d 2>/dev/null || date -u -d "$1 days ago" +%Y-%m-%d; }
+D0="$DATE"; D1="$(date_back 1)"; D2="$(date_back 2)"
 
-# add " | unfolding" suffix to each title
-ITEMS=$(echo "$TOPICS" | jq '[.[] | . + " | unfolding"]')
+# fetch recent World Cup results within the window (with venue city)
+WC_RAW=$(curl -sf "$WC_API/eventspastleague.php?id=$WC_LEAGUE") || WC_RAW=""
+if [ -n "$WC_RAW" ]; then
+  WC_RESULTS=$(echo "$WC_RAW" | jq -c --arg d0 "$D0" --arg d1 "$D1" --arg d2 "$D2" '
+    [ .events[]?
+      | select(.dateEvent==$d0 or .dateEvent==$d1 or .dateEvent==$d2)
+      | select(.intHomeScore != null and .intAwayScore != null)
+      | "⚽ \(.strHomeTeam) \(.intHomeScore)-\(.intAwayScore) \(.strAwayTeam)"
+        + (if (.strCity // "") != "" then " @ " + (.strCity | split(",")[0]) else "" end)
+        + " | World Cup" ]')
+else
+  WC_RESULTS="[]"
+fi
+[ -z "$WC_RESULTS" ] && WC_RESULTS="[]"
+
+# fetch upcoming World Cup fixtures (next few)
+WCN_RAW=$(curl -sf "$WC_API/eventsnextleague.php?id=$WC_LEAGUE") || WCN_RAW=""
+if [ -n "$WCN_RAW" ]; then
+  WC_FIXTURES=$(echo "$WCN_RAW" | jq -c '
+    [ .events[]?
+      | select((.strHomeTeam // "") != "" and (.strAwayTeam // "") != "")
+      | "⚽ Next: \(.strHomeTeam) vs \(.strAwayTeam) (\(.dateEvent)\(if (.strTime // "") != "" then " " + .strTime[0:5] else "" end)) | World Cup" ][0:5]')
+else
+  WC_FIXTURES="[]"
+fi
+[ -z "$WC_FIXTURES" ] && WC_FIXTURES="[]"
+
+# combine results + upcoming fixtures
+WC_ITEMS=$(jq -n --argjson r "$WC_RESULTS" --argjson f "$WC_FIXTURES" '$r + $f')
+
+# fetch today's AI-news topic titles
+NEWS_ITEMS=$(curl -sf "$API_BASE/digests/$DATE/topics" \
+  | jq -c '[.topics[]?.title // empty | "🤖 " + . + " | unfolding"]') || NEWS_ITEMS="[]"
+[ -z "$NEWS_ITEMS" ] && NEWS_ITEMS="[]"
+
+# merge World Cup items (results + fixtures) first, then AI-news topics
+ITEMS=$(jq -n --argjson wc "$WC_ITEMS" --argjson news "$NEWS_ITEMS" '$wc + $news')
 
 COUNT=$(echo "$ITEMS" | jq 'length')
 [ "$COUNT" -lt 2 ] && exit 0
@@ -62,7 +99,7 @@ chmod +x "$UPDATE_SCRIPT"
 ok "Created $UPDATE_SCRIPT"
 
 # --- run it once ---
-info "Fetching today's spinner items..."
+info "Fetching World Cup results & today's AI news..."
 bash "$UPDATE_SCRIPT" && ok "Spinner updated" || err "First update failed (no digest for today yet?)"
 
 # --- add shell hook to .zshrc / .bashrc ---
@@ -86,4 +123,4 @@ case "${SHELL:-}" in
 esac
 
 echo ""
-ok "Done! Your Claude Code spinner will update with today's AI news on each new shell."
+ok "Done! Your Claude Code spinner will update with World Cup results & today's AI news on each new shell."
