@@ -73,7 +73,7 @@ WC_ITEMS=$(jq -n --argjson r "$WC_RESULTS" --argjson f "$WC_FIXTURES" '$r + $f')
 
 # fetch today's AI-news topic titles
 NEWS_ITEMS=$(curl -sf "$API_BASE/digests/$DATE/topics" \
-  | jq -c '[.topics[]?.title // empty | . + " | unfolding"]') || NEWS_ITEMS="[]"
+  | jq -c '[.topics[]?.title // empty | "🤖 " + . + " | unfolding"]') || NEWS_ITEMS="[]"
 [ -z "$NEWS_ITEMS" ] && NEWS_ITEMS="[]"
 
 # merge World Cup items (results + fixtures) first, then AI-news topics
