@@ -20,11 +20,11 @@ While the FIFA World Cup is on, the spinner also surfaces football straight from
 
 ```
 ⚽ Australia 2-0 Turkey @ Vancouver | World Cup
-⚽ Next: Germany vs Curaçao (2026-06-14 17:00) | World Cup
+⚽ Next: Germany vs Curaçao (2026-06-14 17:00 IL) | World Cup
 ```
 
 - **Recent results** with venue, over a rolling today / yesterday / day-before window (so the latest finished matches always show).
-- **Upcoming fixtures** — the next matches on the calendar.
+- **Upcoming fixtures** — the next matches on the calendar, with kickoff times in Israel time (`IL`).
 - **Refreshes hourly** (vs daily for AI news), on each new shell — so live scores and just-finished results don't sit stale all day.
 - **Auto off-season:** when there are no recent or upcoming matches, it quietly falls back to AI news only — nothing to toggle.
 

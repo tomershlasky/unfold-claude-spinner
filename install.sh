@@ -66,13 +66,23 @@ if [ "$wc_stale" -eq 1 ]; then
   fi
   [ -z "$WC_RESULTS" ] && WC_RESULTS="[]"
 
-  # fetch upcoming World Cup fixtures (next few)
+  # fetch upcoming World Cup fixtures (next few); kickoff times converted UTC -> Israel
   WCN_RAW=$(curl -sf "$WC_API/eventsnextleague.php?id=$WC_LEAGUE") || WCN_RAW=""
   if [ -n "$WCN_RAW" ]; then
-    WC_FIXTURES=$(echo "$WCN_RAW" | jq -c '
+    WC_FIXTURES=$(echo "$WCN_RAW" | TZ="Asia/Jerusalem" jq -c '
       [ .events[]?
         | select((.strHomeTeam // "") != "" and (.strAwayTeam // "") != "")
-        | "⚽ Next: \(.strHomeTeam) vs \(.strAwayTeam) (\(.dateEvent)\(if (.strTime // "") != "" then " " + .strTime[0:5] else "" end)) | World Cup" ][0:5]')
+        | . as $e
+        # build a UTC epoch from the timestamp, or fall back to dateEvent + strTime
+        | ( ($e.strTimestamp // "") as $ts
+            | if $ts != "" then ($ts | strptime("%Y-%m-%dT%H:%M:%S") | mktime)
+              elif (($e.dateEvent // "") != "" and ($e.strTime // "") != "")
+                then (($e.dateEvent + "T" + $e.strTime) | strptime("%Y-%m-%dT%H:%M:%S") | mktime)
+              else null end ) as $epoch
+        | if $epoch != null
+          then "⚽ Next: \($e.strHomeTeam) vs \($e.strAwayTeam) (\($epoch | strflocaltime("%Y-%m-%d %H:%M")) IL) | World Cup"
+          else "⚽ Next: \($e.strHomeTeam) vs \($e.strAwayTeam) (\($e.dateEvent)) | World Cup"
+          end ][0:5]')
   else
     WC_FIXTURES="[]"
   fi
