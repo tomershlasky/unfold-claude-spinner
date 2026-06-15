@@ -12,7 +12,7 @@ Every new terminal, it fetches today's AI headlines and shows them as the spinne
 ```
 
 - Pulls today's topics from Unfold and writes them to `spinnerVerbs` in `~/.claude/settings.json`.
-- Refreshes once a day, on each new shell. No config, no API keys.
+- News refreshes once a day, on each new shell. No config, no API keys.
 
 ## ⚽ World Cup edition
 
@@ -25,6 +25,7 @@ While the FIFA World Cup is on, the spinner also surfaces football straight from
 
 - **Recent results** with venue, over a rolling today / yesterday / day-before window (so the latest finished matches always show).
 - **Upcoming fixtures** — the next matches on the calendar.
+- **Refreshes hourly** (vs daily for AI news), on each new shell — so live scores and just-finished results don't sit stale all day.
 - **Auto off-season:** when there are no recent or upcoming matches, it quietly falls back to AI news only — nothing to toggle.
 
 ## Install
